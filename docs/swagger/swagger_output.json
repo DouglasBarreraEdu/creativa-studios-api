@@ -19,6 +19,14 @@
     {
       "name": "Inventario",
       "description": "Gestión de inventario"
+    },
+    {
+      "name": "Producto",
+      "description": "Gestion de productos"
+    },
+    {
+      "name": "Precio",
+      "description": "Gestión de precios"
     }
   ],
   "schemes": [
@@ -571,6 +579,375 @@
           },
           "401": {
             "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/producto/": {
+      "post": {
+        "tags": [
+          "Producto"
+        ],
+        "summary": "Crear insumo/material de producto (ADMIN)",
+        "description": "",
+        "parameters": [
+          {
+            "name": "x-token",
+            "in": "header",
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "nombre": {
+                  "type": "string",
+                  "example": "Camisas Talla S blanco 100% algodón"
+                },
+                "tipo": {
+                  "type": "string",
+                  "example": "insumo"
+                },
+                "costo_base": {
+                  "type": "number",
+                  "example": 5.25
+                },
+                "codigo": {
+                  "type": "string",
+                  "example": "1234"
+                },
+                "id_insumo_inventario": {
+                  "type": "number",
+                  "example": 1
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Producto"
+        ],
+        "summary": "Listar producto",
+        "description": "",
+        "parameters": [
+          {
+            "name": "x-token",
+            "in": "header",
+            "type": "string"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Número de página a consultar",
+            "type": "integer",
+            "required": false,
+            "example": 1
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Cantidad de registros por página",
+            "type": "integer",
+            "required": false,
+            "example": 10
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Texto para buscar por nombre de producto",
+            "type": "string",
+            "required": false,
+            "example": "camisas"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/producto/{id}": {
+      "get": {
+        "tags": [
+          "Producto"
+        ],
+        "summary": "Obtener producto por id",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "x-token",
+            "in": "header",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Producto"
+        ],
+        "summary": "Actualizar producto sin modificar stock_actual (ADMIN)",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "x-token",
+            "in": "header",
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "nombre": {
+                  "type": "string",
+                  "example": "Camisas Talla S blanco 100% algodón"
+                },
+                "tipo": {
+                  "type": "string",
+                  "example": "insumo"
+                },
+                "costo_base": {
+                  "type": "number",
+                  "example": 5.25
+                },
+                "codigo": {
+                  "type": "string",
+                  "example": "1234"
+                },
+                "id_insumo_inventario": {
+                  "type": "number",
+                  "example": 1
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Producto"
+        ],
+        "summary": "Eliminar producto si no tiene referencias (ADMIN)",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "x-token",
+            "in": "header",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      }
+    },
+    "/api/precio/": {
+      "post": {
+        "tags": [
+          "Precio"
+        ],
+        "summary": "Crear precio para producto (ADMIN)",
+        "description": "",
+        "parameters": [
+          {
+            "name": "x-token",
+            "in": "header",
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id_producto": {
+                  "type": "number",
+                  "example": 1
+                },
+                "margen_ganancia": {
+                  "type": "number",
+                  "example": 30
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      }
+    },
+    "/api/precio/producto/{idProducto}": {
+      "get": {
+        "tags": [
+          "Precio"
+        ],
+        "summary": "Obtener precio por producto",
+        "description": "",
+        "parameters": [
+          {
+            "name": "idProducto",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "x-token",
+            "in": "header",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Precio"
+        ],
+        "summary": "Actualizar margen de ganancia de un producto (ADMIN)",
+        "description": "",
+        "parameters": [
+          {
+            "name": "idProducto",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "x-token",
+            "in": "header",
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "margen_ganancia": {
+                  "type": "number",
+                  "example": 35
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
           }
         }
       }
