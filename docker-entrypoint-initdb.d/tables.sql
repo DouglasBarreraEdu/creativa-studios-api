@@ -10,7 +10,7 @@ CREATE TABLE usuario (
     email VARCHAR(150) UNIQUE NOT NULL,
     contrasena TEXT NOT NULL,
     id_rol INT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMPTZ DEFAULT now(),
 
     CONSTRAINT fk_usuario_id_rol
         FOREIGN KEY (id_rol)
@@ -35,7 +35,7 @@ CREATE TABLE inventario (
 
     unidad_de_medida VARCHAR(30) NOT NULL,
 
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMPTZ DEFAULT now()
 );
 
 CREATE TABLE producto (
@@ -51,7 +51,7 @@ CREATE TABLE producto (
 
     id_insumo_inventario INTEGER,
 
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT now(),
 
     CONSTRAINT fk_producto_inventario
       FOREIGN KEY(id_insumo_inventario)
