@@ -4,6 +4,7 @@ import { PrecioError } from '../services/precio.errors.js'
 import * as precioService from '../services/precio.service.js'
 import {
   validateCreatePrecioInput,
+  validatePrecioFilters,
   validatePrecioProductoId,
   validateUpdatePrecioInput,
 } from '../validators/precio.validator.js'
@@ -47,6 +48,32 @@ export const createPrecio = async (req: Request, res: Response) => {
     })
   } catch (error) {
     return handlePrecioError(error, res, 'Error al crear precio')
+  }
+}
+
+export const listPrecio = async (req: Request, res: Response) => {
+  try {
+    const validation = validatePrecioFilters(
+      req.query as Record<string, unknown>,
+    )
+
+    if (!validation.value) {
+      return res.status(400).json({
+        success: false,
+        message: validation.error,
+        data: null,
+      })
+    }
+
+    const data = await precioService.listPrecio(validation.value)
+
+    return res.status(200).json({
+      success: true,
+      message: 'Precios obtenidos correctamente',
+      data,
+    })
+  } catch (error) {
+    return handlePrecioError(error, res, 'Error al listar precios')
   }
 }
 

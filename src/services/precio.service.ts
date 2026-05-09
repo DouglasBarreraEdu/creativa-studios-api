@@ -4,6 +4,8 @@ import * as productoRepository from '../repositories/producto.repository.js'
 import type {
   ActualizarPrecioInput,
   CrearPrecioInput,
+  PrecioFilters,
+  PrecioListResult,
 } from '../types/precio.types.js'
 import { PrecioError } from './precio.errors.js'
 
@@ -71,6 +73,22 @@ export const getPrecioByProducto = async (idProducto: number) => {
   }
 
   return precio
+}
+
+export const listPrecio = async (
+  filters: PrecioFilters,
+): Promise<PrecioListResult> => {
+  const { items, total } = await precioRepository.listPrecio(filters)
+
+  return {
+    items,
+    pagination: {
+      page: filters.page,
+      limit: filters.limit,
+      total,
+      totalPages: total === 0 ? 0 : Math.ceil(total / filters.limit),
+    },
+  }
 }
 
 export const updatePrecio = async (

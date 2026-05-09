@@ -873,6 +873,55 @@
             "description": "Forbidden"
           }
         }
+      },
+      "get": {
+        "tags": [
+          "Precio"
+        ],
+        "summary": "Listar precios",
+        "description": "",
+        "parameters": [
+          {
+            "name": "x-token",
+            "in": "header",
+            "type": "string"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Número de página a consultar",
+            "type": "integer",
+            "required": false,
+            "example": 1
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Cantidad de registros por página",
+            "type": "integer",
+            "required": false,
+            "example": 10
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Texto para buscar por nombre de producto",
+            "type": "string",
+            "required": false,
+            "example": "camisa"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
       }
     },
     "/api/precio/producto/{idProducto}": {

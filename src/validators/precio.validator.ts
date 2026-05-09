@@ -1,7 +1,11 @@
 import type {
   ActualizarPrecioInput,
   CrearPrecioInput,
+  PrecioFilters,
 } from '../types/precio.types.js'
+
+const PRECIO_LIMIT_DEFAULT = 10
+const PRECIO_LIMIT_MAX = 100
 
 const parsePositiveInteger = (
   value: unknown,
@@ -92,4 +96,49 @@ export const validatePrecioProductoId = (
   }
 
   return { value: id }
+}
+
+export const validatePrecioFilters = (
+  query: Record<string, unknown>,
+): { value?: PrecioFilters; error?: string } => {
+  const rawPage = query.page
+  const rawLimit = query.limit
+  const rawSearch = query.search
+
+  const page =
+    typeof rawPage === 'string' && rawPage.trim() !== ''
+      ? Number.parseInt(rawPage, 10)
+      : 1
+  const limit =
+    typeof rawLimit === 'string' && rawLimit.trim() !== ''
+      ? Number.parseInt(rawLimit, 10)
+      : PRECIO_LIMIT_DEFAULT
+
+  if (!Number.isInteger(page) || page <= 0) {
+    return { error: 'page debe ser un entero mayor a 0' }
+  }
+
+  if (!Number.isInteger(limit) || limit <= 0 || limit > PRECIO_LIMIT_MAX) {
+    return {
+      error: `limit debe ser un entero entre 1 y ${PRECIO_LIMIT_MAX}`,
+    }
+  }
+
+  if (
+    rawSearch !== undefined &&
+    (typeof rawSearch !== 'string' || rawSearch.trim() === '')
+  ) {
+    return { error: 'search debe ser un texto no vacio' }
+  }
+
+  const value: PrecioFilters = {
+    page,
+    limit,
+  }
+
+  if (typeof rawSearch === 'string' && rawSearch.trim() !== '') {
+    value.search = rawSearch.trim()
+  }
+
+  return { value }
 }

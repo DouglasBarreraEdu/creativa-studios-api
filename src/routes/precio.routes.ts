@@ -3,6 +3,7 @@ import { Router, type Router as RouterType } from 'express'
 import {
   createPrecio,
   getPrecioByProducto,
+  listPrecio,
   updatePrecio,
 } from '../controllers/precio.controller.js'
 import { validateJWT } from '../middlewares/validate-jwt.middleware.js'
@@ -27,6 +28,37 @@ precioRouter.post(
   validateJWT,
   validateRole('ADMIN'),
   createPrecio,
+)
+
+precioRouter.get(
+  '/',
+  /* #swagger.tags = ['Precio']
+     #swagger.summary = 'Listar precios'
+     #swagger.parameters['page'] = {
+       in: 'query',
+       description: 'Número de página a consultar',
+       type: 'integer',
+       required: false,
+       example: 1
+     }
+     #swagger.parameters['limit'] = {
+       in: 'query',
+       description: 'Cantidad de registros por página',
+       type: 'integer',
+       required: false,
+       example: 10
+     }
+     #swagger.parameters['search'] = {
+       in: 'query',
+       description: 'Texto para buscar por nombre de producto',
+       type: 'string',
+       required: false,
+       example: 'camisa'
+     }
+  */
+
+  validateJWT,
+  listPrecio,
 )
 
 precioRouter.get(
