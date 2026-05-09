@@ -90,7 +90,7 @@ CREATE TABLE pedido (
        )
       ),
 
-    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_creacion TIMESTAMPTZ DEFAULT now(),
 
     fecha_entrega DATE,
 
@@ -157,7 +157,7 @@ CREATE TABLE movimiento_inventario (
 
     comentario TEXT,
 
-    fecha_movimiento TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_movimiento TIMESTAMPTZ DEFAULT now(),
 
     id_inventario INTEGER NOT NULL,
 

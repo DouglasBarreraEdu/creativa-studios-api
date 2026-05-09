@@ -1,5 +1,6 @@
 import { pool } from '../db.js'
 import * as productoRepository from '../repositories/producto.repository.js'
+import * as precioRepository from '../repositories/precio.repository.js'
 import { ProductoError } from './producto.errors.js'
 import type {
   ActualizarProductoInput,
@@ -99,6 +100,10 @@ export const updateProducto = async (
       payload,
       client,
     )
+
+    if (payload.costo_base !== undefined) {
+      await precioRepository.recalcularPrecioSugeridoByProductoId(id, client)
+    }
 
     await client.query('COMMIT')
 
