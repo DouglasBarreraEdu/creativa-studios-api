@@ -43,9 +43,7 @@ export const createProducto = async (req: Request, res: Response) => {
       })
     }
 
-    const producto = await productoService.createProducto(
-      validation.value,
-    )
+    const producto = await productoService.createProducto(validation.value)
 
     return res.status(201).json({
       success: true,
@@ -95,9 +93,7 @@ export const getProductoById = async (req: Request, res: Response) => {
       })
     }
 
-    const producto = await productoService.getProductoById(
-      validation.value,
-    )
+    const producto = await productoService.getProductoById(validation.value)
 
     return res.status(200).json({
       success: true,

@@ -18,6 +18,7 @@ const mapProducto = <T extends QueryResultRow>(row: T): Producto => ({
   costo_base: row.costo_base,
   codigo: row.codigo,
   id_insumo_inventario: row.id_insumo_inventario,
+  nombre_insumo_inventario: row.nombre_insumo_inventario ?? null,
   created_at: row.created_at,
 })
 
@@ -26,9 +27,17 @@ export const findProductoById = async (
   db: Queryable = pool,
 ): Promise<Producto | null> => {
   const result = await db.query(
-    `SELECT id, nombre, tipo, costo_base, codigo, id_insumo_inventario, created_at
-     FROM producto
-     WHERE id = $1
+    `SELECT p.id,
+            p.nombre,
+            p.tipo,
+            p.costo_base,
+            p.codigo,
+            p.id_insumo_inventario,
+            i.nombre AS nombre_insumo_inventario,
+            p.created_at
+     FROM producto p
+     LEFT JOIN inventario i ON i.id = p.id_insumo_inventario
+     WHERE p.id = $1
      LIMIT 1`,
     [id],
   )
@@ -41,9 +50,17 @@ export const findProductoByNombre = async (
   db: Queryable = pool,
 ): Promise<Producto | null> => {
   const result = await db.query(
-    `SELECT id, nombre, tipo, costo_base, codigo, id_insumo_inventario, created_at
-     FROM producto
-     WHERE LOWER(nombre) = LOWER($1)
+    `SELECT p.id,
+            p.nombre,
+            p.tipo,
+            p.costo_base,
+            p.codigo,
+            p.id_insumo_inventario,
+            i.nombre AS nombre_insumo_inventario,
+            p.created_at
+     FROM producto p
+     LEFT JOIN inventario i ON i.id = p.id_insumo_inventario
+     WHERE LOWER(p.nombre) = LOWER($1)
      LIMIT 1`,
     [nombre],
   )
@@ -56,9 +73,21 @@ export const createProducto = async (
   db: Queryable = pool,
 ): Promise<Producto> => {
   const result = await db.query(
-    `INSERT INTO producto (nombre, tipo, costo_base, codigo, id_insumo_inventario)
-     VALUES ($1, $2, $3, $4, $5)
-     RETURNING id, nombre, tipo, costo_base, codigo, id_insumo_inventario, created_at`,
+    `WITH inserted AS (
+       INSERT INTO producto (nombre, tipo, costo_base, codigo, id_insumo_inventario)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id, nombre, tipo, costo_base, codigo, id_insumo_inventario, created_at
+     )
+     SELECT inserted.id,
+            inserted.nombre,
+            inserted.tipo,
+            inserted.costo_base,
+            inserted.codigo,
+            inserted.id_insumo_inventario,
+            i.nombre AS nombre_insumo_inventario,
+            inserted.created_at
+     FROM inserted
+     LEFT JOIN inventario i ON i.id = inserted.id_insumo_inventario`,
     [
       payload.nombre,
       payload.tipo,
@@ -107,10 +136,22 @@ export const updateProducto = async (
   values.push(id)
 
   const result = await db.query(
-    `UPDATE producto
-     SET ${fields.join(', ')}
-     WHERE id = $${values.length}
-     RETURNING id, nombre, tipo, costo_base, codigo, id_insumo_inventario, created_at`,
+    `WITH updated AS (
+       UPDATE producto
+       SET ${fields.join(', ')}
+       WHERE id = $${values.length}
+       RETURNING id, nombre, tipo, costo_base, codigo, id_insumo_inventario, created_at
+     )
+     SELECT updated.id,
+            updated.nombre,
+            updated.tipo,
+            updated.costo_base,
+            updated.codigo,
+            updated.id_insumo_inventario,
+            i.nombre AS nombre_insumo_inventario,
+            updated.created_at
+     FROM updated
+     LEFT JOIN inventario i ON i.id = updated.id_insumo_inventario`,
     values,
   )
 
@@ -122,15 +163,21 @@ export const listProducto = async (
   db: Queryable = pool,
 ): Promise<{ items: ProductoListItem[]; total: number }> => {
   const conditions: string[] = []
+  const qualifiedConditions: string[] = []
   const values: Array<string | number> = []
 
   if (filters.search) {
     values.push(`%${filters.search}%`)
     conditions.push(`nombre ILIKE $${values.length}`)
+    qualifiedConditions.push(`p.nombre ILIKE $${values.length}`)
   }
 
   const whereClause =
     conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+  const qualifiedWhereClause =
+    qualifiedConditions.length > 0
+      ? `WHERE ${qualifiedConditions.join(' AND ')}`
+      : ''
 
   const countResult = await db.query<{ total: string }>(
     `SELECT COUNT(*) AS total
@@ -143,16 +190,18 @@ export const listProducto = async (
 
   const result = await db.query<ProductoListItem>(
     `SELECT
-       id,
-       nombre,
-       tipo,
-       costo_base,
-       codigo,
-       id_insumo_inventario,
-       created_at
-     FROM producto
-     ${whereClause}
-     ORDER BY nombre ASC, id ASC
+       p.id,
+       p.nombre,
+       p.tipo,
+       p.costo_base,
+       p.codigo,
+       p.id_insumo_inventario,
+       i.nombre AS nombre_insumo_inventario,
+       p.created_at
+     FROM producto p
+     LEFT JOIN inventario i ON i.id = p.id_insumo_inventario
+     ${qualifiedWhereClause}
+     ORDER BY p.nombre ASC, p.id ASC
      LIMIT $${values.length - 1}
      OFFSET $${values.length}`,
     values,

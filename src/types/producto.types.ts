@@ -5,6 +5,7 @@ export interface Producto {
   costo_base: number
   codigo: string
   id_insumo_inventario: number
+  nombre_insumo_inventario: string | null
   created_at: Date
 }
 
@@ -38,6 +39,7 @@ export interface ProductoListItem {
   costo_base: number
   codigo: string
   id_insumo_inventario: number
+  nombre_insumo_inventario: string | null
   created_at: Date
 }
 
