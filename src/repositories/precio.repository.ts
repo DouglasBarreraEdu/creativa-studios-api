@@ -64,3 +64,26 @@ export const updatePrecioByProductoId = async (
 
   return mapPrecio(result.rows[0])
 }
+
+export const recalcularPrecioSugeridoByProductoId = async (
+  idProducto: number,
+  db: Queryable = pool,
+): Promise<Precio | null> => {
+  const result = await db.query(
+    `UPDATE precio AS p
+     SET precio_sugerido = ROUND(
+       (
+         pr.costo_base + 
+         (pr.costo_base * COALESCE(p.margen_ganancia, 0) / 100)
+       )::numeric,
+       2
+     )
+     FROM producto AS pr
+     WHERE p.id_producto = pr.id
+       AND p.id_producto = $1
+     RETURNING p.id, p.margen_ganancia, p.precio_sugerido, p.id_producto`,
+    [idProducto],
+  )
+
+  return result.rows[0] ? mapPrecio(result.rows[0]) : null
+}
