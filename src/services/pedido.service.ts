@@ -7,6 +7,7 @@ import * as pedidoRepository from '../repositories/pedido.repository.js'
 import * as precioRepository from '../repositories/precio.repository.js'
 import * as productoRepository from '../repositories/producto.repository.js'
 import type {
+  ActualizarPedidoInput,
   CrearPedidoInput,
   PedidoEstado,
   PedidoFilters,
@@ -20,6 +21,13 @@ const TRANSICIONES_PERMITIDAS: Record<PedidoEstado, PedidoEstado[]> = {
   finalizado: ['entregado'],
   cancelado: [],
   entregado: [],
+}
+
+type DetallePedidoCalculado = {
+  id_producto: number
+  cantidad: number
+  precio_unitario: number
+  subtotal: number
 }
 
 const getPedidoCodigo = (idPedido: number) =>
@@ -67,6 +75,56 @@ const validateRoleForEstado = (role: string, nuevoEstado: PedidoEstado) => {
 
   throw new PedidoError('No tiene permisos para cambiar a ese estado', 403)
 }
+
+const calcularDetallesPedido = async (
+  detalles: CrearPedidoInput['detalles'],
+  client: PoolClient,
+): Promise<DetallePedidoCalculado[]> => {
+  const detallesCalculados: DetallePedidoCalculado[] = []
+
+  for (const detalle of detalles) {
+    const producto = await productoRepository.findProductoById(
+      detalle.id_producto,
+      client,
+    )
+
+    if (!producto) {
+      throw new PedidoError(
+        `Producto con id ${detalle.id_producto} no encontrado`,
+        404,
+      )
+    }
+
+    const precio = await precioRepository.findPrecioByProductoId(
+      detalle.id_producto,
+      client,
+    )
+
+    if (!precio) {
+      throw new PedidoError(
+        `El producto ${producto.nombre} no tiene precio definido`,
+        409,
+      )
+    }
+
+    const precioUnitario = Number(precio.precio_sugerido)
+    const subtotal = Number((precioUnitario * detalle.cantidad).toFixed(2))
+
+    detallesCalculados.push({
+      id_producto: detalle.id_producto,
+      cantidad: detalle.cantidad,
+      precio_unitario: precioUnitario,
+      subtotal,
+    })
+  }
+
+  return detallesCalculados
+}
+
+const calcularTotalPedido = (detalles: DetallePedidoCalculado[]) =>
+  Number(
+    detalles.reduce((total, detalle) => total + detalle.subtotal, 0).toFixed(2),
+  )
 
 const descontarInventarioPedido = async (
   idPedido: number,
@@ -201,54 +259,12 @@ export const createPedido = async (
       throw new PedidoError('Cliente no encontrado', 404)
     }
 
-    const detallesCalculados: Array<{
-      id_producto: number
-      cantidad: number
-      precio_unitario: number
-      subtotal: number
-    }> = []
-
-    for (const detalle of payload.detalles) {
-      const producto = await productoRepository.findProductoById(
-        detalle.id_producto,
-        client,
-      )
-
-      if (!producto) {
-        throw new PedidoError(
-          `Producto con id ${detalle.id_producto} no encontrado`,
-          404,
-        )
-      }
-
-      const precio = await precioRepository.findPrecioByProductoId(
-        detalle.id_producto,
-        client,
-      )
-
-      if (!precio) {
-        throw new PedidoError(
-          `El producto ${producto.nombre} no tiene precio definido`,
-          409,
-        )
-      }
-
-      const precioUnitario = Number(precio.precio_sugerido)
-      const subtotal = Number((precioUnitario * detalle.cantidad).toFixed(2))
-
-      detallesCalculados.push({
-        id_producto: detalle.id_producto,
-        cantidad: detalle.cantidad,
-        precio_unitario: precioUnitario,
-        subtotal,
-      })
-    }
-
-    const totalPedido = Number(
-      detallesCalculados
-        .reduce((total, detalle) => total + detalle.subtotal, 0)
-        .toFixed(2),
+    const detallesCalculados = await calcularDetallesPedido(
+      payload.detalles,
+      client,
     )
+
+    const totalPedido = calcularTotalPedido(detallesCalculados)
 
     const pedido = await pedidoRepository.createPedido(
       {
@@ -280,6 +296,89 @@ export const createPedido = async (
 
     if (!pedidoDetalle) {
       throw new PedidoError('No se pudo obtener el pedido creado', 500)
+    }
+
+    await client.query('COMMIT')
+
+    return pedidoDetalle
+  } catch (error) {
+    await client.query('ROLLBACK')
+    throw error
+  } finally {
+    client.release()
+  }
+}
+
+export const updatePedido = async (
+  id: number,
+  payload: ActualizarPedidoInput,
+) => {
+  const client = await pool.connect()
+
+  try {
+    await client.query('BEGIN')
+
+    const currentPedido = await pedidoRepository.findPedidoByIdForUpdate(
+      id,
+      client,
+    )
+
+    if (!currentPedido) {
+      throw new PedidoError('Pedido no encontrado', 404)
+    }
+
+    if (currentPedido.estado !== 'pendiente') {
+      throw new PedidoError('Solo se pueden editar pedidos pendientes', 409)
+    }
+
+    const cliente = await clienteRepository.findClienteById(
+      payload.id_cliente,
+      client,
+    )
+
+    if (!cliente) {
+      throw new PedidoError('Cliente no encontrado', 404)
+    }
+
+    const detallesCalculados = await calcularDetallesPedido(
+      payload.detalles,
+      client,
+    )
+
+    const totalPedido = calcularTotalPedido(detallesCalculados)
+
+    await pedidoRepository.updatePedido(
+      id,
+      {
+        id_cliente: payload.id_cliente,
+        fecha_entrega: payload.fecha_entrega ?? null,
+        total_pedido: totalPedido,
+      },
+      client,
+    )
+
+    await pedidoRepository.deleteDetallesPedidoByPedidoId(id, client)
+
+    for (const detalle of detallesCalculados) {
+      await pedidoRepository.createDetallePedido(
+        {
+          id_pedido: id,
+          id_producto: detalle.id_producto,
+          cantidad: detalle.cantidad,
+          precio_unitario: detalle.precio_unitario,
+          subtotal: detalle.subtotal,
+        },
+        client,
+      )
+    }
+
+    const pedidoDetalle = await pedidoRepository.findPedidoDetalleById(
+      id,
+      client,
+    )
+
+    if (!pedidoDetalle) {
+      throw new PedidoError('No se pudo obtener el pedido actualizado', 500)
     }
 
     await client.query('COMMIT')
