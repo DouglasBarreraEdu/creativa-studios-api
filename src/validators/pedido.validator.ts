@@ -1,5 +1,6 @@
 import type {
   ActualizarEstadoPedidoInput,
+  ActualizarPedidoInput,
   CrearPedidoInput,
   PedidoEstado,
   PedidoFilters,
@@ -152,6 +153,29 @@ export const validateCreatePedidoInput = (
       id_producto: parsedIdProducto,
       cantidad: parsedCantidad,
     })
+  }
+
+  return { value }
+}
+
+export const validateUpdatePedidoInput = (
+  body: unknown,
+): { value?: ActualizarPedidoInput; error?: string } => {
+  const validation = validateCreatePedidoInput(body)
+
+  if (!validation.value) {
+    return {
+      error: validation.error ?? 'Payload invalido',
+    }
+  }
+
+  const value: ActualizarPedidoInput = {
+    id_cliente: validation.value.id_cliente,
+    detalles: validation.value.detalles,
+  }
+
+  if (validation.value.fecha_entrega !== undefined) {
+    value.fecha_entrega = validation.value.fecha_entrega
   }
 
   return { value }

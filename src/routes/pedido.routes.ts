@@ -4,6 +4,7 @@ import {
   createPedido,
   getPedidoById,
   listPedido,
+  updatePedido,
   updatePedidoEstado,
 } from '../controllers/pedido.controller.js'
 import { validateJWT } from '../middlewares/validate-jwt.middleware.js'
@@ -95,6 +96,47 @@ pedidoRouter.get(
   validateJWT,
   validateRole('ADMIN', 'RECEPCION', 'PRODUCCION', 'INSTALADOR'),
   getPedidoById,
+)
+
+pedidoRouter.put(
+  '/:id',
+  /* #swagger.tags = ['Pedido']
+     #swagger.summary = 'Actualizar pedido pendiente'
+     #swagger.description = 'Permite editar cliente, fecha de entrega y detalles únicamente si el pedido está en estado pendiente. El total se recalcula automáticamente según los precios actuales de los productos.'
+     #swagger.parameters['body'] = {
+       in: 'body',
+       required: true,
+       schema: {
+         id_cliente: 1,
+         fecha_entrega: '2026-05-28',
+         detalles: [
+           {
+             id_producto: 1,
+             cantidad: 3
+           }
+         ]
+       }
+     }
+     #swagger.responses[200] = {
+       description: 'Pedido actualizado correctamente'
+     }
+     #swagger.responses[400] = {
+       description: 'Datos inválidos'
+     }
+     #swagger.responses[403] = {
+       description: 'No tiene permisos para editar pedidos'
+     }
+     #swagger.responses[404] = {
+       description: 'Pedido, cliente o producto no encontrado'
+     }
+     #swagger.responses[409] = {
+       description: 'Solo se pueden editar pedidos pendientes o el producto no tiene precio definido'
+     }
+  */
+
+  validateJWT,
+  validateRole('ADMIN', 'RECEPCION'),
+  updatePedido,
 )
 
 pedidoRouter.patch(

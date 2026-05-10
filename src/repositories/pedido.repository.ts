@@ -21,6 +21,12 @@ interface CrearPedidoRepositoryInput {
   total_pedido: number
 }
 
+interface ActualizarPedidoRepositoryInput {
+  id_cliente: number
+  fecha_entrega?: string | null
+  total_pedido: number
+}
+
 interface CrearDetallePedidoRepositoryInput {
   id_pedido: number
   id_producto: number
@@ -147,6 +153,37 @@ export const createPedido = async (
   return mapPedido(result.rows[0])
 }
 
+export const updatePedido = async (
+  id: number,
+  payload: ActualizarPedidoRepositoryInput,
+  db: Queryable = pool,
+): Promise<Pedido> => {
+  const result = await db.query(
+    `UPDATE pedido
+     SET
+       fecha_entrega = $1,
+       total_pedido = $2,
+       id_cliente = $3
+     WHERE id = $4
+     RETURNING
+       id,
+       estado,
+       fecha_creacion,
+       fecha_entrega,
+       total_pedido,
+       id_cliente,
+       id_usuario`,
+    [
+      payload.fecha_entrega ?? null,
+      payload.total_pedido,
+      payload.id_cliente,
+      id,
+    ],
+  )
+
+  return mapPedido(result.rows[0])
+}
+
 export const createDetallePedido = async (
   payload: CrearDetallePedidoRepositoryInput,
   db: Queryable = pool,
@@ -186,6 +223,17 @@ export const createDetallePedido = async (
     precio_unitario: Number(result.rows[0].precio_unitario),
     subtotal: Number(result.rows[0].subtotal),
   }
+}
+
+export const deleteDetallesPedidoByPedidoId = async (
+  idPedido: number,
+  db: Queryable = pool,
+): Promise<void> => {
+  await db.query(
+    `DELETE FROM detalle_pedido
+     WHERE id_pedido = $1`,
+    [idPedido],
+  )
 }
 
 export const findPedidoById = async (

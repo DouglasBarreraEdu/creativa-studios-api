@@ -29,6 +29,12 @@ export interface CrearPedidoInput {
   detalles: DetallePedidoInput[]
 }
 
+export interface ActualizarPedidoInput {
+  id_cliente: number
+  fecha_entrega?: string
+  detalles: DetallePedidoInput[]
+}
+
 export interface ActualizarEstadoPedidoInput {
   estado: PedidoEstado
 }

@@ -8,6 +8,7 @@ import {
   validatePedidoFilters,
   validatePedidoId,
   validateUpdatePedidoEstadoInput,
+  validateUpdatePedidoInput,
 } from '../validators/pedido.validator.js'
 
 const handlePedidoError = (error: unknown, res: Response, fallback: string) => {
@@ -110,6 +111,43 @@ export const getPedidoById = async (req: AuthRequest, res: Response) => {
     })
   } catch (error) {
     return handlePedidoError(error, res, 'Error al obtener pedido')
+  }
+}
+
+export const updatePedido = async (req: AuthRequest, res: Response) => {
+  try {
+    const idValidation = validatePedidoId(String(req.params.id))
+
+    if (!idValidation.value) {
+      return res.status(400).json({
+        success: false,
+        message: idValidation.error,
+        data: null,
+      })
+    }
+
+    const bodyValidation = validateUpdatePedidoInput(req.body)
+
+    if (!bodyValidation.value) {
+      return res.status(400).json({
+        success: false,
+        message: bodyValidation.error,
+        data: null,
+      })
+    }
+
+    const pedido = await pedidoService.updatePedido(
+      idValidation.value,
+      bodyValidation.value,
+    )
+
+    return res.status(200).json({
+      success: true,
+      message: 'Pedido actualizado correctamente',
+      data: pedido,
+    })
+  } catch (error) {
+    return handlePedidoError(error, res, 'Error al actualizar pedido')
   }
 }
 
