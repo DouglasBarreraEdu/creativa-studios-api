@@ -9,6 +9,7 @@ import type {
   PedidoFilters,
   PedidoInventarioDetalle,
   PedidoListItem,
+  PedidoListProductoItem,
 } from '../types/pedido.types.js'
 
 type Queryable = PoolClient | typeof pool
@@ -38,26 +39,69 @@ const mapPedido = <T extends QueryResultRow>(row: T): Pedido => ({
   id_usuario: row.id_usuario,
 })
 
+const parsePedidoListProductos = (
+  productos: unknown,
+): PedidoListProductoItem[] => {
+  if (Array.isArray(productos)) {
+    return productos.map((producto) => ({
+      id_producto: Number(producto.id_producto),
+      producto_nombre: String(producto.producto_nombre),
+      cantidad: Number(producto.cantidad),
+    }))
+  }
+
+  if (typeof productos === 'string') {
+    try {
+      const parsed = JSON.parse(productos)
+
+      if (!Array.isArray(parsed)) {
+        return []
+      }
+
+      return parsed.map((producto) => ({
+        id_producto: Number(producto.id_producto),
+        producto_nombre: String(producto.producto_nombre),
+        cantidad: Number(producto.cantidad),
+      }))
+    } catch {
+      return []
+    }
+  }
+
+  return []
+}
+
 const mapPedidoListItem = <T extends QueryResultRow>(
   row: T,
-): PedidoListItem => ({
-  id: row.id,
-  estado: row.estado,
-  fecha_creacion: row.fecha_creacion,
-  fecha_entrega: row.fecha_entrega ?? null,
-  total_pedido: Number(row.total_pedido ?? 0),
+): PedidoListItem => {
+  const productos = parsePedidoListProductos(row.productos)
 
-  id_cliente: row.id_cliente,
-  cliente_nombre: row.cliente_nombre,
-  cliente_nombre_comercial: row.cliente_nombre_comercial ?? null,
-  cliente_nombre_contacto: row.cliente_nombre_contacto,
-  cliente_telefono: row.cliente_telefono,
-  cliente_email: row.cliente_email ?? null,
-  cliente_direccion: row.cliente_direccion,
+  const primerProducto = productos[0]?.producto_nombre ?? 'Sin productos'
+  const productosExtra = productos.length - 1
 
-  id_usuario: row.id_usuario,
-  usuario_nombre: row.usuario_nombre,
-})
+  return {
+    id: row.id,
+    estado: row.estado,
+    fecha_creacion: row.fecha_creacion,
+    fecha_entrega: row.fecha_entrega ?? null,
+    total_pedido: Number(row.total_pedido ?? 0),
+
+    id_cliente: row.id_cliente,
+    cliente_nombre: row.cliente_nombre_comercial,
+    cliente_nombre_comercial: row.cliente_nombre_comercial,
+    cliente_nombre_contacto: row.cliente_nombre_contacto,
+
+    id_usuario: row.id_usuario,
+    usuario_nombre: row.usuario_nombre,
+
+    producto_resumen:
+      productosExtra > 0
+        ? `${primerProducto} + ${productosExtra} más`
+        : primerProducto,
+    total_items: Number(row.total_items ?? 0),
+    productos,
+  }
+}
 
 const mapDetallePedido = <T extends QueryResultRow>(
   row: T,
@@ -199,15 +243,10 @@ export const findPedidoDetalleById = async (
        p.fecha_creacion,
        p.fecha_entrega,
        p.total_pedido,
-
        p.id_cliente,
-       COALESCE(c.nombre_comercial, c.nombre_contacto) AS cliente_nombre,
        c.nombre_comercial AS cliente_nombre_comercial,
        c.nombre_contacto AS cliente_nombre_contacto,
        c.telefono AS cliente_telefono,
-       c.email AS cliente_email,
-       c.direccion AS cliente_direccion,
-
        p.id_usuario,
        u.nombre AS usuario_nombre,
        u.email AS usuario_email
@@ -250,12 +289,10 @@ export const findPedidoDetalleById = async (
     total_pedido: Number(pedidoRow.total_pedido ?? 0),
 
     id_cliente: pedidoRow.id_cliente,
-    cliente_nombre: pedidoRow.cliente_nombre,
-    cliente_nombre_comercial: pedidoRow.cliente_nombre_comercial ?? null,
+    cliente_nombre: pedidoRow.cliente_nombre_comercial,
+    cliente_nombre_comercial: pedidoRow.cliente_nombre_comercial,
     cliente_nombre_contacto: pedidoRow.cliente_nombre_contacto,
-    cliente_telefono: pedidoRow.cliente_telefono,
-    cliente_email: pedidoRow.cliente_email ?? null,
-    cliente_direccion: pedidoRow.cliente_direccion,
+    cliente_telefono: pedidoRow.cliente_telefono ?? null,
 
     id_usuario: pedidoRow.id_usuario,
     usuario_nombre: pedidoRow.usuario_nombre,
@@ -306,21 +343,40 @@ export const listPedido = async (
        p.fecha_creacion,
        p.fecha_entrega,
        p.total_pedido,
-
        p.id_cliente,
-       COALESCE(c.nombre_comercial, c.nombre_contacto) AS cliente_nombre,
        c.nombre_comercial AS cliente_nombre_comercial,
        c.nombre_contacto AS cliente_nombre_contacto,
-       c.telefono AS cliente_telefono,
-       c.email AS cliente_email,
-       c.direccion AS cliente_direccion,
-
        p.id_usuario,
-       u.nombre AS usuario_nombre
+       u.nombre AS usuario_nombre,
+       COALESCE(SUM(dp.cantidad), 0) AS total_items,
+       COALESCE(
+         json_agg(
+           json_build_object(
+             'id_producto', pr.id,
+             'producto_nombre', pr.nombre,
+             'cantidad', dp.cantidad
+           )
+           ORDER BY dp.id ASC
+         ) FILTER (WHERE dp.id IS NOT NULL),
+         '[]'
+       ) AS productos
      FROM pedido p
      INNER JOIN cliente c ON c.id = p.id_cliente
      INNER JOIN usuario u ON u.id = p.id_usuario
+     LEFT JOIN detalle_pedido dp ON dp.id_pedido = p.id
+     LEFT JOIN producto pr ON pr.id = dp.id_producto
      ${whereClause}
+     GROUP BY
+       p.id,
+       p.estado,
+       p.fecha_creacion,
+       p.fecha_entrega,
+       p.total_pedido,
+       p.id_cliente,
+       c.nombre_comercial,
+       c.nombre_contacto,
+       p.id_usuario,
+       u.nombre
      ORDER BY p.fecha_creacion DESC, p.id DESC
      LIMIT $${values.length - 1}
      OFFSET $${values.length}`,

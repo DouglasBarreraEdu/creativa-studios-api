@@ -41,6 +41,12 @@ export interface PedidoFilters {
   idUsuario?: number
 }
 
+export interface PedidoListProductoItem {
+  id_producto: number
+  producto_nombre: string
+  cantidad: number
+}
+
 export interface PedidoListItem {
   id: number
   estado: PedidoEstado
@@ -50,14 +56,15 @@ export interface PedidoListItem {
 
   id_cliente: number
   cliente_nombre: string
-  cliente_nombre_comercial: string | null
+  cliente_nombre_comercial: string
   cliente_nombre_contacto: string
-  cliente_telefono: string
-  cliente_email: string | null
-  cliente_direccion: string
 
   id_usuario: number
   usuario_nombre: string
+
+  producto_resumen: string
+  total_items: number
+  productos: PedidoListProductoItem[]
 }
 
 export interface PedidoDetalleItem {
@@ -80,11 +87,9 @@ export interface PedidoDetalle {
 
   id_cliente: number
   cliente_nombre: string
-  cliente_nombre_comercial: string | null
+  cliente_nombre_comercial: string
   cliente_nombre_contacto: string
-  cliente_telefono: string
-  cliente_email: string | null
-  cliente_direccion: string
+  cliente_telefono: string | null
 
   id_usuario: number
   usuario_nombre: string
