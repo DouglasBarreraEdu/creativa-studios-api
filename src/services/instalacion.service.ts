@@ -82,6 +82,21 @@ const validateInstaladorAsignado = async (
   }
 }
 
+const buildPedidoNoFinalizadoMessage = (
+  accion: 'iniciar' | 'completar',
+  estadoPedido: string,
+) => {
+  if (estadoPedido === 'pendiente') {
+    return `No se puede ${accion} la instalación porque el pedido está pendiente. Primero debe cambiar el estado del pedido a finalizado.`
+  }
+
+  if (estadoPedido === 'produccion') {
+    return `No se puede ${accion} la instalación porque el pedido está en producción. Primero debe cambiar el estado del pedido a finalizado.`
+  }
+
+  return `No se puede ${accion} la instalación porque el pedido no está finalizado. Estado actual del pedido: ${estadoPedido}.`
+}
+
 export const createInstalacionForPedido = async (
   idPedido: number,
   payload: CrearInstalacionInput,
@@ -316,7 +331,7 @@ export const updateEstadoInstalacion = async (
 
       if (instalacion.pedido_estado !== 'finalizado') {
         throw new InstalacionError(
-          'La instalación solo puede iniciar cuando el pedido está finalizado',
+          buildPedidoNoFinalizadoMessage('iniciar', instalacion.pedido_estado),
           409,
         )
       }
@@ -325,7 +340,10 @@ export const updateEstadoInstalacion = async (
     if (payload.estado === 'completada') {
       if (instalacion.pedido_estado !== 'finalizado') {
         throw new InstalacionError(
-          'La instalación solo puede completarse cuando el pedido está finalizado',
+          buildPedidoNoFinalizadoMessage(
+            'completar',
+            instalacion.pedido_estado,
+          ),
           409,
         )
       }
