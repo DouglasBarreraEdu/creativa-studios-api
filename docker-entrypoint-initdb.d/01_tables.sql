@@ -241,9 +241,3 @@ ON instalacion(estado);
 
 CREATE INDEX idx_instalacion_fecha_programada
 ON instalacion(fecha_programada);
-
-INSERT INTO rol (nombre, descripcion) VALUES
-('ADMIN', 'Dueño o administrador'),
-('RECEPCION', 'Gestión de pedidos'),
-('PRODUCCION', 'Equipo de producción'),
-('INSTALADOR', 'Equipo instalador');
