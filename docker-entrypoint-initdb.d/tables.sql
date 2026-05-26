@@ -247,3 +247,17 @@ INSERT INTO rol (nombre, descripcion) VALUES
 ('RECEPCION', 'Gestión de pedidos'),
 ('PRODUCCION', 'Equipo de producción'),
 ('INSTALADOR', 'Equipo instalador');
+
+-- Usuarios
+INSERT INTO usuario (nombre, email, contrasena, id_rol)
+SELECT datos.nombre, datos.email, datos.contrasena, rol.id
+FROM (
+    VALUES
+        ('Douglas Barrera', 'admin@gmail.com', '$2b$10$dOFhBreYibxJ/9Gp3vUYyOCJadj18PY29jGArA9sOT0kdYyzJoyri', 'ADMIN'),
+        ('Hazel Calderón', 'recepcion@gmail.com', '$2b$10$Y.8mB5i2x5XFLzhE0s6u.ukl7CWawf10EFu7F5hYKZ9NAnbtJ7SNO', 'RECEPCION'),
+        ('Gabriel Calderón', 'produccion@gmail.com', '$2b$10$AJnOSqjFVsJyYiDOKBGddeBN1nDomMn86TLhrxEXw4Pp4d0aRYcdu', 'PRODUCCION'),
+        ('Ricardo Heredia', 'instalador@gmail.com', '$2b$10$cemLaKXScGEXQOmg4C37j.s4t4WXstmAkohv108SfBx7QRaAT1WwG', 'INSTALADOR')
+) AS datos(nombre, email, contrasena, rol_nombre)
+INNER JOIN rol 
+    ON rol.nombre = datos.rol_nombre
+ON CONFLICT (email) DO NOTHING;
