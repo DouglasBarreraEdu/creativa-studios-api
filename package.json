@@ -5,7 +5,7 @@
   "description": "An API for Creativa Studios",
   "scripts": {
     "dev": "tsx watch --env-file=.env src/index.ts",
-    "start": "node --env-file=.env dist/index.js",
+    "start": "node dist/index.js",
     "docs:swagger": "tsx docs/swagger/swagger.ts",
     "format": "prettier --write \"src/**/*\"",
     "lint": "eslint .",
